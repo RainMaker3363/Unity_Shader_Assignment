@@ -5,6 +5,7 @@
 		_Glossiness ("Smoothness", Range(0,1)) = 0.5
 		_Metallic ("Metallic", Range(0,1)) = 0.0
 		_BumpMap("Bumpmap", 2D) = "bump" {}
+		_BumpScale("BumpSacle", Range(0,1)) = 0.6
 		_Cube("Cubemap", CUBE) = "" {}
 	}
 	SubShader {
@@ -27,6 +28,7 @@
 			float2 uv_BumpMap;
 			float3 viewDir;
 			float3 worldRefl;
+			float3 worldNormal;
 			INTERNAL_DATA
 		};
 
@@ -35,6 +37,7 @@
 		half _Glossiness;
 		half _Metallic;
 		fixed4 _Color;
+		float _BumpScale;
 
 		void surf (Input IN, inout SurfaceOutputStandard o) {
 			// Albedo comes from a texture tinted by color
@@ -46,12 +49,20 @@
 			//o.Normal = UnpackNormal(tex2D(_BumpMap, IN.uv_BumpMap));
 			//fTime0_X = lerp(1, 10, abs(unity_DeltaTime.w / 1.5f));
 			
+			float3 N = normalize(IN.worldNormal);
+			float3 I = normalize(IN.viewDir);
+			float3 R = 2.0 * dot(I, N) * N - I;
+
 			float2 uv = float2(IN.uv_BumpMap.x, IN.uv_BumpMap.y + ((_Time.y) * 1));
+			//o.Normal = UnpackNormal(tex2D(_BumpMap, uv));
 			o.Normal = tex2D(_BumpMap, uv);
+			IN.worldNormal = o.Normal;
+
 			
 			// 큐브맵을 덮어준다.
 			o.Emission = texCUBE(_Cube, WorldReflectionVector(IN, o.Normal)).rgb;
-			
+			//o.Emission = texCUBE(_Cube, R + 0.05 * o,Normal).rgb;
+
 			// Metallic and smoothness come from slider variables
 			o.Metallic = _Metallic;
 			o.Smoothness = _Glossiness;
